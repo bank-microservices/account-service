@@ -1,0 +1,21 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: account-service
+  messages:
+    basename: i18n/messages
+    fallback-to-system-locale: true
+    use-code-as-default-message: true
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: accountdb
+      auto-index-creation: false
+
+service:
+  client:
+    uri: http://localhost:8081/api/v1/client
+  
