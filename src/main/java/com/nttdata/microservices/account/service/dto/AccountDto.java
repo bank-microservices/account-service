@@ -37,6 +37,10 @@ public class AccountDto {
   @PositiveOrZero(message = "maintenanceFee must be greater or equal to zero (0)")
   private Double maintenanceFee;
 
+  @NotNull(message = "maxLimitMonthlyMovements is required")
+  @PositiveOrZero(message = "maxLimitMonthlyMovements must be greater or equal to zero (0)")
+  private Integer maxLimitMonthlyMovements;
+
   @NotBlank(message = "accountTypeCode is required")
   @JsonProperty(access = WRITE_ONLY)
   private String accountTypeCode;

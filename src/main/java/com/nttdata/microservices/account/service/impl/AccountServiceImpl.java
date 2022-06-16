@@ -48,7 +48,7 @@ public class AccountServiceImpl implements AccountService {
   @Override
   public Flux<AccountDto> findAll() {
     return accountRepository.findAll()
-            .map(accountMapper::toDto);
+        .map(accountMapper::toDto);
   }
 
   /**
@@ -60,7 +60,7 @@ public class AccountServiceImpl implements AccountService {
   @Override
   public Mono<AccountDto> findById(String id) {
     return accountRepository.findById(id)
-            .map(accountMapper::toDto);
+        .map(accountMapper::toDto);
   }
 
   /**
@@ -73,7 +73,7 @@ public class AccountServiceImpl implements AccountService {
   @Override
   public Mono<AccountDto> findByAccountNumber(String accountNumber) {
     return accountRepository.findByAccountNumber(accountNumber)
-            .map(accountMapper::toDto);
+        .map(accountMapper::toDto);
   }
 
   /**
@@ -87,14 +87,17 @@ public class AccountServiceImpl implements AccountService {
   @Override
   public Mono<AccountDto> findByAccountNumberAndClientDocumentNumber(String accountNumber, String documentNumber) {
     return accountRepository.findByAccountNumberAndClientDocumentNumber(accountNumber, documentNumber)
-            .map(accountMapper::toDto);
+        .map(accountMapper::toDto);
   }
 
   /**
    * Create a new account, if the client exists, if the account number does not
-   * exist, if the account type exists, if the client type is valid for the account type, if the
-   * maintenance fee is valid, if the maximum limit of movements is valid, if the day allowed is valid, then
-   * map the accountDto to an entity, set the createAt and status, insert the account, and map the account to a Dto.
+   * exist, if the account type exists, if the client type is valid for the
+   * account type, if the
+   * maintenance fee is valid, if the maximum limit of movements is valid, if the
+   * day allowed is valid, then
+   * map the accountDto to an entity, set the createAt and status, insert the
+   * account, and map the account to a Dto.
    *
    * @param accountDto It's a DTO that contains the data to be saved in the
    *                   database.
@@ -103,21 +106,22 @@ public class AccountServiceImpl implements AccountService {
   @Override
   public Mono<AccountDto> create(AccountDto accountDto) {
     return Mono.just(accountDto)
-            .flatMap(this::existClient)
-            .flatMap(this::existAccountNumber)
-            .flatMap(this::existAccountType)
-            .flatMap(this::validateClientTypeByAccountType)
-            .flatMap(this::validateMaintenanceFee)
-            .flatMap(this::validateDayAllowed)
-            .map(accountMapper::toEntity)
-            .map(account -> {
-              account.setCreateAt(LocalDateTime.now());
-              account.setStatus(true);
-              return account;
-            })
-            .flatMap(this.accountRepository::insert)
-            .map(accountMapper::toDto)
-            .subscribeOn(Schedulers.boundedElastic());
+        .flatMap(this::existClient)
+        .flatMap(this::existAccountNumber)
+        .flatMap(this::existAccountType)
+        .flatMap(this::validateClientTypeByAccountType)
+        .flatMap(this::validateMaintenanceFee)
+        .flatMap(this::validateMaxLimitMovement)
+        .flatMap(this::validateDayAllowed)
+        .map(accountMapper::toEntity)
+        .map(account -> {
+          account.setCreateAt(LocalDateTime.now());
+          account.setStatus(true);
+          return account;
+        })
+        .flatMap(this.accountRepository::insert)
+        .map(accountMapper::toDto)
+        .subscribeOn(Schedulers.boundedElastic());
   }
 
   /**
@@ -131,10 +135,10 @@ public class AccountServiceImpl implements AccountService {
 
     log.debug("Request to proxy Client by documentNumber: {}", accountDto.getClientDocumentNumber());
     return clientProxy.getClientByDocumentNumber(accountDto.getClientDocumentNumber())
-            .switchIfEmpty(Mono.error(new ClientNotFoundException(getMsg("client.not.found"))))
-            .doOnNext(accountDto::setClient)
-            .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(1)))
-            .thenReturn(accountDto);
+        .switchIfEmpty(Mono.error(new ClientNotFoundException(getMsg("client.not.found"))))
+        .doOnNext(accountDto::setClient)
+        .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(1)))
+        .thenReturn(accountDto);
   }
 
   /**
@@ -146,8 +150,8 @@ public class AccountServiceImpl implements AccountService {
    */
   private Mono<AccountDto> existAccountNumber(AccountDto accountDto) {
     return findByAccountNumber(accountDto.getAccountNumber())
-            .flatMap(r -> Mono.error(new BadRequestException(getMsg("account.already"))))
-            .thenReturn(accountDto);
+        .flatMap(r -> Mono.error(new BadRequestException(getMsg("account.already"))))
+        .thenReturn(accountDto);
   }
 
   /**
@@ -160,9 +164,9 @@ public class AccountServiceImpl implements AccountService {
    */
   private Mono<AccountDto> existAccountType(AccountDto accountDto) {
     return typeRepository.findByCode(accountDto.getAccountTypeCode())
-            .switchIfEmpty(Mono.error(new AccountTypeNotFoundException(getMsg("account.type.not.found"))))
-            .doOnNext(accountDto::setAccountType)
-            .thenReturn(accountDto);
+        .switchIfEmpty(Mono.error(new AccountTypeNotFoundException(getMsg("account.type.not.found"))))
+        .doOnNext(accountDto::setAccountType)
+        .thenReturn(accountDto);
   }
 
   /**
@@ -177,39 +181,39 @@ public class AccountServiceImpl implements AccountService {
    */
   private Mono<AccountDto> validateClientTypeByAccountType(AccountDto accountDto) {
     return Mono.just(accountDto)
-            .flatMap(dto -> accountRepository
-                    .findByClientIdAndAccountTypeId(dto.getClient().getId(), dto.getAccountType().getId())
-                    .count()
-                    .handle((count, sink) -> {
-                      if (count > 0 && ClientType.PERSONAL == dto.getClient().getClientType()) {
-                        sink.error(new BadRequestException(getMsg("account.client.already.registered.type",
-                                dto.getClient().getFirstNameBusiness(),
-                                dto.getClient().getClientType().name(),
-                                dto.getAccountType().getDescription())));
-                      } else
-                        sink.complete();
-                    })
-                    .thenReturn(dto))
-            .<AccountDto>handle((dto, sink) -> {
-              if (ClientType.BUSINESS == dto.getClient().getClientType()) {
-                if ((EAccountType.SAVING.equalValue(accountDto.getAccountType().getCode()) ||
-                        EAccountType.FIXED_TERM.equalValue(accountDto.getAccountType().getCode()))) {
-                  sink.error(new BadRequestException(getMsg("account.client.cannot.registered.type",
-                          dto.getClient().getFirstNameBusiness(),
-                          dto.getClient().getClientType().name(),
-                          dto.getAccountType().getDescription())));
-                } else if (CollectionUtils.isEmpty(accountDto.getOwners())) {
-                  sink.error(new BadRequestException(getMsg("account.owner.required",
-                          dto.getClient().getClientType().name())));
-                } else if (accountDto.getOwners().stream()
-                        .anyMatch(h -> h.getDocumentNumber().equals(dto.getClient().getDocumentNumber()))) {
-                  sink.error(new BadRequestException(getMsg("account.owner.document.equals")));
-                } else
-                  sink.complete();
+        .flatMap(dto -> accountRepository
+            .findByClientIdAndAccountTypeId(dto.getClient().getId(), dto.getAccountType().getId())
+            .count()
+            .handle((count, sink) -> {
+              if (ClientType.PERSONAL == dto.getClient().getClientType() && count > 0) {
+                sink.error(new BadRequestException(getMsg("account.client.already.registered.type",
+                    dto.getClient().getFirstNameBusiness(),
+                    dto.getClient().getClientType().name(),
+                    dto.getAccountType().getDescription())));
               } else
                 sink.complete();
             })
-            .thenReturn(accountDto);
+            .thenReturn(dto))
+        .<AccountDto>handle((dto, sink) -> {
+          if (ClientType.BUSINESS == dto.getClient().getClientType()) {
+            if ((EAccountType.SAVING.equalValue(accountDto.getAccountType().getCode()) ||
+                EAccountType.FIXED_TERM.equalValue(accountDto.getAccountType().getCode()))) {
+              sink.error(new BadRequestException(getMsg("account.client.cannot.registered.type",
+                  dto.getClient().getFirstNameBusiness(),
+                  dto.getClient().getClientType().name(),
+                  dto.getAccountType().getDescription())));
+            } else if (CollectionUtils.isEmpty(accountDto.getOwners())) {
+              sink.error(new BadRequestException(getMsg("account.owner.required",
+                  dto.getClient().getClientType().name())));
+            } else if (accountDto.getOwners().stream()
+                .anyMatch(h -> h.getDocumentNumber().equals(dto.getClient().getDocumentNumber()))) {
+              sink.error(new BadRequestException(getMsg("account.owner.document.equals")));
+            } else
+              sink.complete();
+          } else
+            sink.complete();
+        })
+        .thenReturn(accountDto);
   }
 
   /**
@@ -221,15 +225,45 @@ public class AccountServiceImpl implements AccountService {
    */
   private Mono<AccountDto> validateMaintenanceFee(AccountDto accountDto) {
     return Mono.just(accountDto)
-            .<AccountDto>handle((dto, sink) -> {
-              if (dto.getMaintenanceFee() > 0 && (EAccountType.SAVING.equalValue(dto.getAccountType().getCode()) ||
-                      EAccountType.FIXED_TERM.equalValue(dto.getAccountType().getCode()))) {
-                sink.error(new BadRequestException(getMsg("account.maintenance.not.have",
-                        dto.getAccountType().getDescription())));
-              } else
-                sink.complete();
-            })
-            .thenReturn(accountDto);
+        .<AccountDto>handle((dto, sink) -> {
+          if ((EAccountType.SAVING.equalValue(dto.getAccountType().getCode()) ||
+              EAccountType.FIXED_TERM.equalValue(dto.getAccountType().getCode()))
+              && dto.getMaintenanceFee() > 0) {
+            sink.error(new BadRequestException(getMsg("account.maintenance.not.have",
+                dto.getAccountType().getDescription())));
+          } else if (EAccountType.CURRENT.equalValue(dto.getAccountType().getCode())
+              && dto.getMaintenanceFee() <= 0) {
+            sink.error(new BadRequestException(getMsg("account.maintenance.required.have",
+                dto.getAccountType().getDescription())));
+          } else
+            sink.complete();
+        })
+        .thenReturn(accountDto);
+  }
+
+  /**
+   * It validates the maximum number of movements for an account type
+   *
+   * @param accountDto The object that will be validated
+   * @return A Mono&lt;AccountDto&gt;
+   */
+  private Mono<AccountDto> validateMaxLimitMovement(AccountDto accountDto) {
+    return Mono.just(accountDto)
+        .<AccountDto>handle((dto, sink) -> {
+          Integer maxLimit = dto.getMaxLimitMonthlyMovements();
+          if (EAccountType.SAVING.equalValue(dto.getAccountType().getCode()) && maxLimit <= 0) {
+            sink.error(new BadRequestException(getMsg("account.movements.maximum",
+                dto.getAccountType().getDescription())));
+          } else if (EAccountType.CURRENT.equalValue(dto.getAccountType().getCode()) && maxLimit != 0) {
+            sink.error(new BadRequestException(getMsg("account.movements.not.maximum",
+                dto.getAccountType().getDescription())));
+          } else if (EAccountType.FIXED_TERM.equalValue(dto.getAccountType().getCode()) && maxLimit != 1) {
+            sink.error(new BadRequestException(getMsg("account.movements.maximum.one",
+                dto.getAccountType().getDescription())));
+          } else
+            sink.complete();
+        })
+        .thenReturn(accountDto);
   }
 
   /**
@@ -241,23 +275,23 @@ public class AccountServiceImpl implements AccountService {
    */
   private Mono<AccountDto> validateDayAllowed(AccountDto accountDto) {
     return Mono.just(accountDto)
-            .<AccountDto>handle((dto, sink) -> {
-              Integer dayAllowed = dto.getDayAllowed();
-              if (EAccountType.SAVING.equalValue(dto.getAccountType().getCode())
-                      || EAccountType.CURRENT.equalValue(dto.getAccountType().getCode())) {
-                if (dayAllowed != 0) {
-                  sink.error(new BadRequestException(getMsg("account.day.allowed.not",
-                          dto.getAccountType().getDescription())));
-                }
-              } else if (EAccountType.FIXED_TERM.equalValue(dto.getAccountType().getCode())) {
-                if (!(31 >= dayAllowed && dayAllowed > 0)) {
-                  sink.error(new BadRequestException(
-                          getMsg("account.day.allowed.invalid", dto.getAccountType().getDescription())));
-                }
-              } else
-                sink.complete();
-            })
-            .thenReturn(accountDto);
+        .<AccountDto>handle((dto, sink) -> {
+          Integer dayAllowed = dto.getDayAllowed();
+          if (EAccountType.SAVING.equalValue(dto.getAccountType().getCode())
+              || EAccountType.CURRENT.equalValue(dto.getAccountType().getCode())) {
+            if (dayAllowed != 0) {
+              sink.error(new BadRequestException(getMsg("account.day.allowed.not",
+                  dto.getAccountType().getDescription())));
+            }
+          } else if (EAccountType.FIXED_TERM.equalValue(dto.getAccountType().getCode())) {
+            if (!(31 >= dayAllowed && dayAllowed > 0)) {
+              sink.error(new BadRequestException(
+                  getMsg("account.day.allowed.invalid", dto.getAccountType().getDescription())));
+            }
+          } else
+            sink.complete();
+        })
+        .thenReturn(accountDto);
   }
 
   /**
@@ -272,11 +306,11 @@ public class AccountServiceImpl implements AccountService {
   @Override
   public Mono<AccountDto> update(String id, AccountDto accountDto) {
     return accountRepository.findById(id)
-            .flatMap(p -> Mono.just(accountDto)
-                    .map(accountMapper::toEntity)
-                    .doOnNext(e -> e.setId(id)))
-            .flatMap(this.accountRepository::save)
-            .map(accountMapper::toDto);
+        .flatMap(p -> Mono.just(accountDto)
+            .map(accountMapper::toEntity)
+            .doOnNext(e -> e.setId(id)))
+        .flatMap(this.accountRepository::save)
+        .map(accountMapper::toDto);
   }
 
   /**
@@ -302,15 +336,15 @@ public class AccountServiceImpl implements AccountService {
   @Override
   public Mono<AccountDto> updateAccountAmount(String accountId, Double amount) {
     return accountRepository.findById(accountId)
-            .switchIfEmpty(Mono.error(new Exception(getMsg("account.not.found"))))
-            .map(account -> {
-              double totalAmount = Double.sum(amount, account.getAmount());
-              account.setAmount(totalAmount);
-              account.setLastModifiedDate(LocalDateTime.now());
-              return account;
-            })
-            .flatMap(accountRepository::save)
-            .map(accountMapper::toDto);
+        .switchIfEmpty(Mono.error(new Exception(getMsg("account.not.found"))))
+        .map(account -> {
+          double totalAmount = Double.sum(amount, account.getAmount());
+          account.setAmount(totalAmount);
+          account.setLastModifiedDate(LocalDateTime.now());
+          return account;
+        })
+        .flatMap(accountRepository::save)
+        .map(accountMapper::toDto);
 
   }
 
