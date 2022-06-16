@@ -12,7 +12,7 @@ public interface AccountService {
 
   Mono<AccountDto> findByAccountNumber(String accountNumber);
 
-  Mono<AccountDto> findByAccountNumberAndClientDocumentNumber(String accountNumber, String documentNumber);
+  Mono<AccountDto> findByAccountNumberAndClientDocument(String accountNumber, String documentNumber);
 
   Mono<AccountDto> create(AccountDto accountDto);
 

@@ -50,11 +50,11 @@ public class AccountController {
             .defaultIfEmpty(ResponseEntity.notFound().build());
   }
 
-  @GetMapping("/{accountNumber}/client/{documentNumber}")
-  public Mono<ResponseEntity<AccountDto>> findByAccountNumberAndDocumentNumber(@PathVariable String accountNumber,
+  @GetMapping("/number/{accountNumber}/client/{documentNumber}")
+  public Mono<ResponseEntity<AccountDto>> findByAccountNumberAndClientDocument(@PathVariable String accountNumber,
                                                                                @PathVariable String documentNumber) {
-    log.info("get Account accountNumber and documentNumber: {}", accountNumber);
-    return accountService.findByAccountNumberAndClientDocumentNumber(accountNumber, documentNumber)
+    log.info("get Account accountNumber {} and documentNumber: {}", accountNumber, documentNumber);
+    return accountService.findByAccountNumberAndClientDocument(accountNumber, documentNumber)
             .map(ResponseEntity::ok)
             .defaultIfEmpty(ResponseEntity.notFound().build());
   }

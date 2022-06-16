@@ -85,8 +85,8 @@ public class AccountServiceImpl implements AccountService {
    * @return A Mono&lt;AccountDto&gt;
    */
   @Override
-  public Mono<AccountDto> findByAccountNumberAndClientDocumentNumber(String accountNumber, String documentNumber) {
-    return accountRepository.findByAccountNumberAndClientDocumentNumber(accountNumber, documentNumber)
+  public Mono<AccountDto> findByAccountNumberAndClientDocument(String accountNumber, String documentNumber) {
+    return accountRepository.findByAccountNumberAndClientDocument(accountNumber, documentNumber)
         .map(accountMapper::toDto);
   }
 
