@@ -1,8 +1,7 @@
 package com.nttdata.microservices.account.service.dto;
 
-import lombok.Data;
-
 import javax.validation.constraints.NotNull;
+import lombok.Data;
 
 @Data
 public class OwnerDto {

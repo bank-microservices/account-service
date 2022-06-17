@@ -2,7 +2,7 @@ package com.nttdata.microservices.account.controller;
 
 import com.nttdata.microservices.account.service.AccountService;
 import com.nttdata.microservices.account.service.dto.AccountDto;
-import com.nttdata.microservices.account.service.dto.BalanceDto;
+import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,8 +18,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import javax.validation.Valid;
 
 
 @Slf4j
@@ -39,16 +37,16 @@ public class AccountController {
   public Mono<ResponseEntity<AccountDto>> findById(@PathVariable final String id) {
     log.info("find Account id: {}", id);
     return accountService.findById(id)
-            .map(ResponseEntity::ok)
-            .defaultIfEmpty(ResponseEntity.notFound().build());
+        .map(ResponseEntity::ok)
+        .defaultIfEmpty(ResponseEntity.notFound().build());
   }
 
   @GetMapping("/account-number/{accountNumber}")
   public Mono<ResponseEntity<AccountDto>> findByAccountNumber(@PathVariable String accountNumber) {
     log.info("find Account accountNumber: {}", accountNumber);
     return accountService.findByAccountNumber(accountNumber)
-            .map(ResponseEntity::ok)
-            .defaultIfEmpty(ResponseEntity.notFound().build());
+        .map(ResponseEntity::ok)
+        .defaultIfEmpty(ResponseEntity.notFound().build());
   }
 
   @GetMapping("/client-document/{documentNumber}")
@@ -58,18 +56,11 @@ public class AccountController {
   }
 
   @GetMapping("/number/{accountNumber}/client/{documentNumber}")
-  public Mono<ResponseEntity<AccountDto>> findByAccountNumberAndClientDocument(@PathVariable String accountNumber,
-                                                                               @PathVariable String documentNumber) {
+  public Mono<ResponseEntity<AccountDto>> findByAccountNumberAndClientDocument(
+      @PathVariable String accountNumber,
+      @PathVariable String documentNumber) {
     log.info("find Account accountNumber {} and documentNumber: {}", accountNumber, documentNumber);
     return accountService.findByAccountNumberAndClientDocument(accountNumber, documentNumber)
-            .map(ResponseEntity::ok)
-            .defaultIfEmpty(ResponseEntity.notFound().build());
-  }
-
-  @GetMapping("/balance/{accountNumber}")
-  public Mono<ResponseEntity<BalanceDto>> getBalance(@PathVariable String accountNumber) {
-    log.info("get Balance Account by accountNumber: {}", accountNumber);
-    return accountService.getBalance(accountNumber)
         .map(ResponseEntity::ok)
         .defaultIfEmpty(ResponseEntity.notFound().build());
   }
@@ -84,9 +75,9 @@ public class AccountController {
   @ResponseStatus(HttpStatus.OK)
   public Mono<AccountDto> updateAmount(@PathVariable("account-id") String accountId,
                                        @PathVariable Double amount) {
+    log.info("update Account amount {} by accountId: {} ", amount, accountId);
     return accountService.updateAccountAmount(accountId, amount);
   }
-
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)

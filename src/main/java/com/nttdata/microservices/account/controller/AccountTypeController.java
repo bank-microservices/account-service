@@ -2,6 +2,7 @@ package com.nttdata.microservices.account.controller;
 
 import com.nttdata.microservices.account.service.AccountTypeService;
 import com.nttdata.microservices.account.service.dto.AccountTypeDto;
+import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -17,8 +18,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import javax.validation.Valid;
 
 @Slf4j
 @RestController
@@ -38,8 +37,8 @@ public class AccountTypeController {
   public Mono<ResponseEntity<AccountTypeDto>> findById(@PathVariable String id) {
     log.info("get Account Type id: {}", id);
     return typeService.findById(id)
-            .map(ResponseEntity::ok)
-            .defaultIfEmpty(ResponseEntity.notFound().build());
+        .map(ResponseEntity::ok)
+        .defaultIfEmpty(ResponseEntity.notFound().build());
   }
 
   @PostMapping
@@ -51,11 +50,12 @@ public class AccountTypeController {
 
   @PutMapping("/{id}")
   @ResponseStatus(HttpStatus.OK)
-  public Mono<ResponseEntity<AccountTypeDto>> update(@PathVariable String id, @Valid @RequestBody AccountTypeDto typeDto) {
+  public Mono<ResponseEntity<AccountTypeDto>> update(@PathVariable String id,
+                                                     @Valid @RequestBody AccountTypeDto typeDto) {
     log.info("update Account Type id: {} - values : {}", id, typeDto);
     return typeService.update(id, typeDto)
-            .map(ResponseEntity::ok)
-            .defaultIfEmpty(ResponseEntity.notFound().build());
+        .map(ResponseEntity::ok)
+        .defaultIfEmpty(ResponseEntity.notFound().build());
   }
 
   @DeleteMapping("/{id}")

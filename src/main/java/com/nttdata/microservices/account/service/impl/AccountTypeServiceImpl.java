@@ -27,7 +27,7 @@ public class AccountTypeServiceImpl implements AccountTypeService {
   @Override
   public Flux<AccountTypeDto> findAll() {
     return typeRepository.findAll()
-            .map(typeMapper::toDto);
+        .map(typeMapper::toDto);
   }
 
   /**
@@ -39,7 +39,7 @@ public class AccountTypeServiceImpl implements AccountTypeService {
   @Override
   public Mono<AccountTypeDto> findById(String id) {
     return typeRepository.findById(id)
-            .map(typeMapper::toDto);
+        .map(typeMapper::toDto);
   }
 
   /**
@@ -51,7 +51,7 @@ public class AccountTypeServiceImpl implements AccountTypeService {
   @Override
   public Mono<AccountTypeDto> findByCode(String code) {
     return typeRepository.findByCode(code)
-            .map(typeMapper::toDto);
+        .map(typeMapper::toDto);
   }
 
   /**
@@ -64,9 +64,9 @@ public class AccountTypeServiceImpl implements AccountTypeService {
   @Override
   public Mono<AccountTypeDto> create(AccountTypeDto accountTypeDto) {
     return Mono.just(accountTypeDto)
-            .map(typeMapper::toEntity)
-            .flatMap(typeRepository::insert)
-            .map(typeMapper::toDto);
+        .map(typeMapper::toEntity)
+        .flatMap(typeRepository::insert)
+        .map(typeMapper::toDto);
   }
 
   /**
@@ -80,11 +80,11 @@ public class AccountTypeServiceImpl implements AccountTypeService {
   @Override
   public Mono<AccountTypeDto> update(String id, AccountTypeDto accountTypeDto) {
     return typeRepository.findById(id)
-            .flatMap(p -> Mono.just(accountTypeDto)
-                    .map(typeMapper::toEntity)
-                    .doOnNext(e -> e.setId(id)))
-            .flatMap(typeRepository::save)
-            .map(typeMapper::toDto);
+        .flatMap(p -> Mono.just(accountTypeDto)
+            .map(typeMapper::toEntity)
+            .doOnNext(e -> e.setId(id)))
+        .flatMap(typeRepository::save)
+        .map(typeMapper::toDto);
   }
 
   /**
