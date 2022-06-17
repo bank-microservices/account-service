@@ -8,6 +8,8 @@ spring:
     basename: i18n/messages
     fallback-to-system-locale: true
     use-code-as-default-message: true
+  jackson:
+    default-property-inclusion: non_null
   data:
     mongodb:
       host: localhost

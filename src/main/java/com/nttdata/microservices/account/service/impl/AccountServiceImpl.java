@@ -1,6 +1,7 @@
 package com.nttdata.microservices.account.service.impl;
 
 import com.nttdata.microservices.account.entity.client.ClientType;
+import com.nttdata.microservices.account.exception.AccountNotFoundException;
 import com.nttdata.microservices.account.exception.AccountTypeNotFoundException;
 import com.nttdata.microservices.account.exception.BadRequestException;
 import com.nttdata.microservices.account.exception.ClientNotFoundException;
@@ -9,6 +10,7 @@ import com.nttdata.microservices.account.repository.AccountRepository;
 import com.nttdata.microservices.account.repository.AccountTypeRepository;
 import com.nttdata.microservices.account.service.AccountService;
 import com.nttdata.microservices.account.service.dto.AccountDto;
+import com.nttdata.microservices.account.service.dto.BalanceDto;
 import com.nttdata.microservices.account.service.dto.enums.EAccountType;
 import com.nttdata.microservices.account.service.mapper.AccountMapper;
 import lombok.RequiredArgsConstructor;
@@ -72,22 +74,39 @@ public class AccountServiceImpl implements AccountService {
    */
   @Override
   public Mono<AccountDto> findByAccountNumber(String accountNumber) {
-    return accountRepository.findByAccountNumber(accountNumber)
-        .map(accountMapper::toDto);
+    return accountRepository.findByAccountNumber(accountNumber);
+  }
+
+  @Override
+  public Flux<AccountDto> findByClientDocument(String documentNumber) {
+    return accountRepository.findByClientDocument(documentNumber);
   }
 
   /**
    * Find an account by account number and client document number, and if found,
    * map it to an account DTO.
    *
-   * @param accountNumber  String
-   * @param documentNumber "123456789"
+   * @param accountNumber  number of the Account
+   * @param documentNumber document number of client
    * @return A Mono&lt;AccountDto&gt;
    */
   @Override
   public Mono<AccountDto> findByAccountNumberAndClientDocument(String accountNumber, String documentNumber) {
     return accountRepository.findByAccountNumberAndClientDocument(accountNumber, documentNumber)
         .map(accountMapper::toDto);
+  }
+
+  @Override
+  public Mono<BalanceDto> getBalance(String accountNumber) {
+    return Mono.just(accountNumber)
+        .flatMap(number -> this.findByAccountNumber(number)
+            .switchIfEmpty(Mono.error(new AccountNotFoundException(getMsg("account.not.found"))))
+        )
+        .map(dto -> BalanceDto.builder()
+            .balance(dto.getAmount())
+            .accountType(dto.getAccountType().getDescription())
+            .accountNumber(dto.getAccountNumber())
+            .build());
   }
 
   /**

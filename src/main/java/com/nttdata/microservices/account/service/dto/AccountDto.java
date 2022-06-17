@@ -2,6 +2,8 @@ package com.nttdata.microservices.account.service.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nttdata.microservices.account.entity.AccountType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -16,6 +18,8 @@ import static com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY;
 import static com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY;
 
 @Data
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class AccountDto {
 
