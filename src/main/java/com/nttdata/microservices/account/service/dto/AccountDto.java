@@ -5,6 +5,7 @@ import static com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nttdata.microservices.account.entity.AccountType;
+import com.nttdata.microservices.account.entity.credit.CreditCard;
 import java.time.LocalDateTime;
 import java.util.List;
 import javax.validation.Valid;
@@ -64,6 +65,9 @@ public class AccountDto {
 
   @JsonProperty(access = READ_ONLY)
   private ClientDto client;
+
+  @JsonProperty(access = READ_ONLY)
+  private CreditCard creditCard;
 
   @JsonProperty(access = READ_ONLY)
   private LocalDateTime createAt;

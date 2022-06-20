@@ -1,5 +1,6 @@
 package com.nttdata.microservices.account.service.dto;
 
+import com.nttdata.microservices.account.entity.client.ClientProfile;
 import com.nttdata.microservices.account.entity.client.ClientType;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,5 +14,6 @@ public class ClientDto {
   private String surnames;
   private String documentNumber;
   private ClientType clientType;
+  private ClientProfile clientProfile;
 
 }

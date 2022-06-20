@@ -2,11 +2,13 @@ package com.nttdata.microservices.account.service.impl;
 
 import static com.nttdata.microservices.account.util.MessageUtils.getMsg;
 
+import com.nttdata.microservices.account.entity.client.ClientProfile;
 import com.nttdata.microservices.account.entity.client.ClientType;
 import com.nttdata.microservices.account.exception.AccountTypeNotFoundException;
 import com.nttdata.microservices.account.exception.BadRequestException;
 import com.nttdata.microservices.account.exception.ClientNotFoundException;
 import com.nttdata.microservices.account.proxy.ClientProxy;
+import com.nttdata.microservices.account.proxy.CreditProxy;
 import com.nttdata.microservices.account.repository.AccountRepository;
 import com.nttdata.microservices.account.repository.AccountTypeRepository;
 import com.nttdata.microservices.account.service.AccountService;
@@ -38,6 +40,7 @@ public class AccountServiceImpl implements AccountService {
   private final AccountMapper accountMapper;
 
   private final ClientProxy clientProxy;
+  private final CreditProxy creditProxy;
 
   /**
    * Find all accounts and map them to a DTO
@@ -115,6 +118,7 @@ public class AccountServiceImpl implements AccountService {
         .flatMap(this::validateMaintenanceFee)
         .flatMap(this::validateMaxLimitMovement)
         .flatMap(this::validateDayAllowed)
+        .flatMap(this::validateCreditCardRequired)
         .map(accountMapper::toEntity)
         .map(account -> {
           account.setCreateAt(LocalDateTime.now());
@@ -175,10 +179,8 @@ public class AccountServiceImpl implements AccountService {
 
   /**
    * It validates that a client of type PERSONAL can only have one account of a
-   * given type, and that a
-   * client of type BUSINESS can only have one account of type CURRENT, and that
-   * the account must have at
-   * least one owner
+   * given type, and that a client of type BUSINESS can only have one account of type CURRENT, and that
+   * the account must have at least one owner
    *
    * @param accountDto AccountDto
    * @return A Mono of AccountDto
@@ -189,6 +191,7 @@ public class AccountServiceImpl implements AccountService {
             .findByClientIdAndAccountTypeId(dto.getClient().getId(), dto.getAccountType().getId())
             .count()
             .handle((count, sink) -> {
+
               if (ClientType.PERSONAL == dto.getClient().getClientType() && count > 0) {
                 sink.error(new BadRequestException(getMsg("account.client.already.registered.type",
                     dto.getClient().getFirstNameBusiness(),
@@ -197,22 +200,29 @@ public class AccountServiceImpl implements AccountService {
               } else {
                 sink.complete();
               }
+
             })
             .thenReturn(dto))
         .<AccountDto>handle((dto, sink) -> {
           if (ClientType.BUSINESS == dto.getClient().getClientType()) {
             if ((EAccountType.SAVING.equalValue(accountDto.getAccountType().getCode())
                 || EAccountType.FIXED_TERM.equalValue(accountDto.getAccountType().getCode()))) {
+
               sink.error(new BadRequestException(getMsg("account.client.cannot.registered.type",
                   dto.getClient().getFirstNameBusiness(),
                   dto.getClient().getClientType().name(),
                   dto.getAccountType().getDescription())));
+
             } else if (CollectionUtils.isEmpty(accountDto.getOwners())) {
+
               sink.error(new BadRequestException(getMsg("account.owner.required",
                   dto.getClient().getClientType().name())));
+
             } else if (accountDto.getOwners().stream()
                 .anyMatch(h -> h.getDocumentNumber().equals(dto.getClient().getDocumentNumber()))) {
+
               sink.error(new BadRequestException(getMsg("account.owner.document.equals")));
+
             } else {
               sink.complete();
             }
@@ -236,12 +246,30 @@ public class AccountServiceImpl implements AccountService {
           if ((EAccountType.SAVING.equalValue(dto.getAccountType().getCode())
               || EAccountType.FIXED_TERM.equalValue(dto.getAccountType().getCode()))
               && dto.getMaintenanceFee() > 0) {
+
             sink.error(new BadRequestException(getMsg("account.maintenance.not.have",
                 dto.getAccountType().getDescription())));
-          } else if (EAccountType.CURRENT.equalValue(dto.getAccountType().getCode())
-              && dto.getMaintenanceFee() <= 0) {
-            sink.error(new BadRequestException(getMsg("account.maintenance.required.have",
-                dto.getAccountType().getDescription())));
+
+          } else if (EAccountType.CURRENT.equalValue(dto.getAccountType().getCode())) {
+
+            ClientProfile clientProfile = accountDto.getClient().getClientProfile();
+            if (clientProfile == ClientProfile.REGULAR && dto.getMaintenanceFee() == 0) {
+
+              sink.error(new BadRequestException(getMsg("account.maintenance.required.have",
+                  dto.getAccountType().getDescription())));
+
+            } else if (clientProfile == ClientProfile.PYME && dto.getMaintenanceFee() > 0) {
+
+              final String clientType = String.format("%s - %s",
+                  dto.getAccountType().getDescription(),
+                  dto.getClient().getClientProfile());
+
+              sink.error(new BadRequestException(getMsg("account.maintenance.not.have",
+                  clientType)));
+
+            } else {
+              sink.complete();
+            }
           } else {
             sink.complete();
           }
@@ -304,6 +332,22 @@ public class AccountServiceImpl implements AccountService {
           }
         })
         .thenReturn(accountDto);
+  }
+
+  private Mono<AccountDto> validateCreditCardRequired(AccountDto accountDto) {
+    return Mono.just(accountDto)
+        .flatMap((dto) -> {
+          String documentNumber = dto.getClient().getDocumentNumber();
+          String errorMessage = getMsg("credit.card.required", dto.getClient().getClientProfile());
+          if (dto.getClient().getClientProfile().in(ClientProfile.PYME, ClientProfile.VIP)) {
+            return creditProxy.findCreditCardByClientDocument(documentNumber, errorMessage)
+                .switchIfEmpty(Mono.error(new BadRequestException(errorMessage)))
+                .doOnNext(dto::setCreditCard)
+                .thenReturn(dto);
+          } else {
+            return Mono.just(dto);
+          }
+        });
   }
 
   /**

@@ -15,5 +15,5 @@ public class Client {
   private String surnames;
   private String documentNumber;
   private ClientType clientType;
-
+  private ClientProfile clientProfile;
 }

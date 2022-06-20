@@ -28,7 +28,7 @@ public class ClientProxyImpl implements ClientProxy {
   @Override
   public Mono<ClientDto> getClientByDocumentNumber(final String documentNumber) {
     return this.webClient.get()
-        .uri("/documentNumber/{number}", documentNumber)
+        .uri("/document-number/{number}", documentNumber)
         .retrieve()
         .onStatus(HttpStatus::is4xxClientError, (clientResponse -> {
           log.info(STATUS_CODE, clientResponse.statusCode().value());

@@ -1,6 +1,7 @@
 package com.nttdata.microservices.account.entity;
 
 import com.nttdata.microservices.account.entity.client.Client;
+import com.nttdata.microservices.account.entity.credit.CreditCard;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Data;
@@ -34,6 +35,8 @@ public class Account extends AbstractAuditingEntity {
   private AccountType accountType;
 
   private Client client;
+
+  private CreditCard creditCard;
 
   private List<Owner> owners;
 

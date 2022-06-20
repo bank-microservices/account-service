@@ -2,6 +2,7 @@ package com.nttdata.microservices.account.exceptionhandler;
 
 import com.nttdata.microservices.account.exception.BadRequestException;
 import com.nttdata.microservices.account.exception.ClientNotFoundException;
+import com.nttdata.microservices.account.exception.CreditException;
 import com.nttdata.microservices.account.exception.DataValidationException;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,13 @@ public class GlobalErrorHandler {
   @ExceptionHandler(ClientNotFoundException.class)
   public ResponseEntity<String> handleClientException(ClientNotFoundException ex) {
     log.error("Exception caught in handleClientException :  {} ", ex.getMessage(), ex);
+    log.info("Status value is : {}", ex.getStatusCode());
+    return ResponseEntity.status(HttpStatus.valueOf(ex.getStatusCode())).body(ex.getMessage());
+  }
+
+  @ExceptionHandler(CreditException.class)
+  public ResponseEntity<String> handleCreditException(CreditException ex) {
+    log.error("Exception caught in handleCreditException :  {} ", ex.getMessage(), ex);
     log.info("Status value is : {}", ex.getStatusCode());
     return ResponseEntity.status(HttpStatus.valueOf(ex.getStatusCode())).body(ex.getMessage());
   }

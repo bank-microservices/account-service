@@ -13,7 +13,7 @@ public class MessageUtils {
     MessageUtils.messageSource = messageSource;
   }
 
-  public static String getMsg(String key, String... value) {
+  public static String getMsg(String key, Object... value) {
     try {
       String message = messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
       MessageFormat messageFormat = new MessageFormat(message);
