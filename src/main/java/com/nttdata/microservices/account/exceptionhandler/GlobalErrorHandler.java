@@ -3,7 +3,6 @@ package com.nttdata.microservices.account.exceptionhandler;
 import com.nttdata.microservices.account.exception.BadRequestException;
 import com.nttdata.microservices.account.exception.ClientNotFoundException;
 import com.nttdata.microservices.account.exception.CreditException;
-import com.nttdata.microservices.account.exception.DataValidationException;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -43,16 +42,9 @@ public class GlobalErrorHandler {
   }
 
   @ExceptionHandler(BadRequestException.class)
-  public ResponseEntity<String> handleClientException(BadRequestException ex) {
+  public ResponseEntity<String> handleBadRequestException(BadRequestException ex) {
     log.error("Exception caught in handleBadRequestException :  {} ", ex.getMessage(), ex);
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
   }
-
-  @ExceptionHandler(DataValidationException.class)
-  public ResponseEntity<String> handleMovieInfoNotfoundException(DataValidationException ex) {
-    log.error("Exception caught in handleMovieInfoNotfoundException :  {} ", ex.getMessage(), ex);
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-  }
-
 
 }
