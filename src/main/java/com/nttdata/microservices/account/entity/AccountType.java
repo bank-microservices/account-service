@@ -18,5 +18,7 @@ public class AccountType extends AbstractAuditingEntity {
   private String code;
 
   private String description;
+  
+  private Double transactionFeeBase;
 
 }

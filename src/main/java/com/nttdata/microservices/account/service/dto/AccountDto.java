@@ -11,6 +11,7 @@ import java.util.List;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -42,7 +43,7 @@ public class AccountDto {
   private Double maintenanceFee;
 
   @NotNull(message = "maxLimitMonthlyMovements is required")
-  @PositiveOrZero(message = "maxLimitMonthlyMovements must be greater or equal to zero (0)")
+  @Positive(message = "maxLimitMonthlyMovements must be greater to zero (0)")
   private Integer maxLimitMonthlyMovements;
 
   @NotBlank(message = "accountTypeCode is required")
@@ -59,6 +60,9 @@ public class AccountDto {
 
   @JsonProperty(access = READ_ONLY)
   private String id;
+
+  @JsonProperty(access = READ_ONLY)
+  private Double transactionFee;
 
   @JsonProperty(access = READ_ONLY)
   private AccountType accountType;

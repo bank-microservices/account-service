@@ -15,6 +15,7 @@ import com.nttdata.microservices.account.service.AccountService;
 import com.nttdata.microservices.account.service.dto.AccountDto;
 import com.nttdata.microservices.account.service.dto.enums.EAccountType;
 import com.nttdata.microservices.account.service.mapper.AccountMapper;
+import com.nttdata.microservices.account.util.Utils;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +50,7 @@ public class AccountServiceImpl implements AccountService {
    */
   @Override
   public Flux<AccountDto> findAll() {
-    return accountRepository.findAll().log()
+    return accountRepository.findAll()
         .map(accountMapper::toDto);
   }
 
@@ -121,6 +122,9 @@ public class AccountServiceImpl implements AccountService {
         .flatMap(this::validateCreditCardRequired)
         .map(accountMapper::toEntity)
         .map(account -> {
+          final Double transactionFee = Utils.defaultIfNull(account.getAccountType()
+              .getTransactionFeeBase(), 0D);
+          account.setTransactionFee(transactionFee);
           account.setCreateAt(LocalDateTime.now());
           account.setStatus(true);
           return account;

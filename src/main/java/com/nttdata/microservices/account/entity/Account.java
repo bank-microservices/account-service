@@ -28,6 +28,7 @@ public class Account extends AbstractAuditingEntity {
 
   private Double amount;
   private Double maintenanceFee;
+  private Double transactionFee;
   private Integer maxLimitMonthlyMovements;
   private Integer dayAllowed;
 
