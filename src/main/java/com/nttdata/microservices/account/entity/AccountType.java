@@ -3,6 +3,7 @@ package com.nttdata.microservices.account.entity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -12,6 +13,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Document(collection = "account_type")
 public class AccountType extends AbstractAuditingEntity {
 
+  @Id
   private String id;
 
   @Indexed(unique = true)
