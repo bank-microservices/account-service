@@ -19,10 +19,12 @@ public class CreditProxyImpl implements CreditProxy {
   private static final String STATUS_CODE = "Status code : {}";
   private final WebClient webClient;
 
-  public CreditProxyImpl(@Value("${service.credit.uri}") String url) {
-    this.webClient = WebClient.builder()
+  public CreditProxyImpl(@Value("${service.credit.uri}") String url,
+                         WebClient.Builder loadBalancedWebClientBuilder) {
+    this.webClient = loadBalancedWebClientBuilder
         .clientConnector(RestUtils.getDefaultClientConnector())
-        .baseUrl(url).build();
+        .baseUrl(url)
+        .build();
   }
 
   /**

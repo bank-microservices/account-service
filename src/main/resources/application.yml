@@ -1,5 +1,6 @@
-service:
-  client:
-    uri: http://localhost:8081/api/v1/client
-  
-  
+#Configuration for WebClient without LoadBalanced
+#service:
+#  client:
+#    uri: http://localhost:8081/api/v1/client
+#  credit:
+#    uri: http://localhost:8083/api/v1/credit
