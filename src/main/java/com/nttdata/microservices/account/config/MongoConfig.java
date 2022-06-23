@@ -10,8 +10,10 @@ public class MongoConfig {
 
   @Bean
   public MongoCustomConversions mongoCustomConversions() {
-    return new MongoCustomConversions(
-        List.of(AccountReadConverter.INSTANCE, AccountWriteConverter.INSTANCE));
+    return new MongoCustomConversions(List.of(
+        AccountReadConverter.INSTANCE,
+        AccountWriteConverter.INSTANCE
+    ));
   }
 
 }
