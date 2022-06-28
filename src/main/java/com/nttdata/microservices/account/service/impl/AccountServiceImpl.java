@@ -7,10 +7,12 @@ import com.nttdata.microservices.account.entity.client.ClientType;
 import com.nttdata.microservices.account.exception.AccountTypeNotFoundException;
 import com.nttdata.microservices.account.exception.BadRequestException;
 import com.nttdata.microservices.account.exception.ClientNotFoundException;
+import com.nttdata.microservices.account.kafka.KafkaProducerService;
 import com.nttdata.microservices.account.proxy.ClientProxy;
 import com.nttdata.microservices.account.proxy.CreditProxy;
 import com.nttdata.microservices.account.repository.AccountRepository;
 import com.nttdata.microservices.account.repository.AccountTypeRepository;
+import com.nttdata.microservices.account.service.AccountKafkaService;
 import com.nttdata.microservices.account.service.AccountService;
 import com.nttdata.microservices.account.service.dto.AccountDto;
 import com.nttdata.microservices.account.service.dto.enums.EAccountType;
@@ -20,6 +22,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
@@ -33,7 +38,7 @@ import reactor.util.retry.Retry;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AccountServiceImpl implements AccountService {
+public class AccountServiceImpl implements AccountService, AccountKafkaService {
 
   private final AccountRepository accountRepository;
   private final AccountTypeRepository typeRepository;
@@ -42,6 +47,11 @@ public class AccountServiceImpl implements AccountService {
 
   private final ClientProxy clientProxy;
   private final CreditProxy creditProxy;
+
+  private final KafkaProducerService<String, Object> kafkaProducerService;
+
+  @Value("${kafka.topic.account-response}")
+  private String topicAccountResponse;
 
   /**
    * Find all accounts and map them to a DTO
@@ -407,5 +417,25 @@ public class AccountServiceImpl implements AccountService {
         .map(accountMapper::toDto);
 
   }
+
+  @Override
+  public Mono<Void> findByNumberAndClientDocument(String accountNumber, String documentNumber) {
+    accountNumber = accountNumber.replace("\"", "");
+    log.debug("");
+    return this.findByAccountNumberAndClientDocument(accountNumber, documentNumber)
+        .switchIfEmpty(
+            Mono.create(sink -> {
+              BadRequestException exception = new BadRequestException(getMsg("account.not.found"));
+              kafkaProducerService.send(topicAccountResponse, exception.getMessage(),
+                  HttpStatus.NOT_FOUND.name());
+              sink.error(exception);
+            })
+        )
+        .doOnNext(dto -> {
+          kafkaProducerService.send(topicAccountResponse, dto, dto.getId());
+        })
+        .then();
+  }
+
 
 }
